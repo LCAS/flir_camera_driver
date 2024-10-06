@@ -1,5 +1,6 @@
 # -----------------------------------------------------------------------------
 # Copyright 2022 Bernd Pfrommer <bernd.pfrommer@gmail.com>
+# Updated by A.Yilmaz <ayilmaz@lincoln.ac.uk>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -143,15 +144,19 @@ example_parameters = {
     },
 }
 
-
 def launch_setup(context, *args, **kwargs):
     """Launch camera driver node."""
     parameter_file = LaunchConfig('parameter_file').perform(context)
+    camerainfo_url = LaunchConfig('camerainfo_url').perform(context)
     camera_type = LaunchConfig('camera_type').perform(context)
     if not parameter_file:
         parameter_file = PathJoinSubstitution(
             [FindPackageShare('spinnaker_camera_driver'), 'config', camera_type + '.yaml']
         )
+    if not camerainfo_url:
+        camerainfo_url = PathJoinSubstitution(
+            [FindPackageShare('spinnaker_camera_driver'), 'config', 'flir_22141921_2.8_0.7_calibration.yaml']
+        ).perform(context)
     if camera_type not in example_parameters:
         raise Exception('no example parameters available for type ' + camera_type)
 
@@ -166,6 +171,7 @@ def launch_setup(context, *args, **kwargs):
                 'ffmpeg_image_transport.encoding': 'hevc_nvenc',
                 'parameter_file': parameter_file,
                 'serial_number': [LaunchConfig('serial')],
+                'camerainfo_url': f'file:///{camerainfo_url}',
             },
         ],
         remappings=[
@@ -199,6 +205,11 @@ def generate_launch_description():
                 'parameter_file',
                 default_value='',
                 description='path to ros parameter definition file (override camera type)',
+            ),
+            LaunchArg(
+                'camerainfo_url',
+                default_value='',
+                description='URL of the camera calibration file',
             ),
             OpaqueFunction(function=launch_setup),
         ]
